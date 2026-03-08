@@ -25,53 +25,9 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // --- DATA DEFAULTS ---
-const DEFAULT_WORKOUT_SPLIT = [
-  {
-    day: "Day 1 (Push)",
-    exercises: [
-      { name: "Flat DB Press", weight: "10kg", sets: "4", reps: "10", tempo: "4-1-1-0" },
-      { name: "L-Sit DB Press", weight: "10kg", sets: "3", reps: "8", tempo: "3-0-1-1" },
-      { name: "Lateral Raises", weight: "5kg", sets: "4", reps: "12", tempo: "3-0-1-2" },
-      { name: "Overhead Tricep Ext", weight: "10kg", sets: "3", reps: "10", tempo: "4-1-1-0" }
-    ]
-  },
-  {
-    day: "Day 2 (Pull)",
-    exercises: [
-      { name: "One-Arm DB Row", weight: "10kg", sets: "4", reps: "10", tempo: "3-0-1-2" },
-      { name: "Bent-Over Flyes", weight: "5kg", sets: "4", reps: "10", tempo: "3-0-1-2" },
-      { name: "Hammer Curls", weight: "10kg", sets: "3", reps: "8", tempo: "4-0-1-1" },
-      { name: "Standard Curls", weight: "7.5kg", sets: "3", reps: "10", tempo: "4-1-1-1" }
-    ]
-  },
-  {
-    day: "Day 3 (Legs)",
-    exercises: [
-      { name: "Goblet Squat", weight: "10kg", sets: "3", reps: "10", tempo: "4-2-1-0" },
-      { name: "Romanian DL", weight: "10kg", sets: "4", reps: "10", tempo: "4-1-1-1" },
-      { name: "Reverse Lunges", weight: "10kg", sets: "4", reps: "6", tempo: "3-1-1-0" },
-      { name: "Calf Raises", weight: "10kg", sets: "3", reps: "12", tempo: "2-2-1-2" },
-      { name: "Floor Plank", weight: "BW", sets: "3", reps: "60s", tempo: "N/A" }
-    ]
-  }
-];
-
-const DEFAULT_DIET_PLAN = [
-  { time: "Pre-Workout", items: "1 Red Banana + 2 Boiled Eggs", calories: 250, protein: 13 },
-  { time: "Post-Workout", items: "Whey Shake, Oats, PB, Banana, Dates", calories: 570, protein: 35 },
-  { time: "Lunch", items: "Rice + Dal + Veggies", calories: 450, protein: 15 },
-  { time: "Evening", items: "Whey + Water", calories: 120, protein: 24 },
-  { time: "Dinner", items: "Poha, Ghee, 1 Boiled Egg", calories: 650, protein: 14 }
-];
-
-const MOCK_HISTORY = [
-  { date: new Date(Date.now() - 35 * 86400000).toISOString(), score: 50, name: 'Day 1 (Push)' },
-  { date: new Date(Date.now() - 28 * 86400000).toISOString(), score: 65, name: 'Day 2 (Pull)' },
-  { date: new Date(Date.now() - 20 * 86400000).toISOString(), score: 80, name: 'Day 3 (Legs)' },
-  { date: new Date(Date.now() - 10 * 86400000).toISOString(), score: 75, name: 'Day 1 (Push)' },
-  { date: new Date(Date.now() - 5 * 86400000).toISOString(), score: 90, name: 'Day 2 (Pull)' },
-  { date: new Date(Date.now() - 1 * 86400000).toISOString(), score: 100, name: 'Day 3 (Legs)' },
-];
+const DEFAULT_WORKOUT_SPLIT: any[] = [];
+const DEFAULT_DIET_PLAN: any[] = [];
+const MOCK_HISTORY: any[] = [];
 
 const getSavedData = (key: string, defaultValue: any) => {
   try {
@@ -84,7 +40,7 @@ const getSavedData = (key: string, defaultValue: any) => {
 
 // --- COMPONENTS ---
 
-const WorkoutTimer = ({ label, isDark, defaultSeconds }: { label: string, isDark: boolean, defaultSeconds: number }) => {
+const WorkoutTimer = ({ label, isDark, defaultSeconds, size = 'md' }: { label: string, isDark: boolean, defaultSeconds: number, size?: 'sm' | 'md' }) => {
   const [timeLeft, setTimeLeft] = useState(defaultSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -117,31 +73,35 @@ const WorkoutTimer = ({ label, isDark, defaultSeconds }: { label: string, isDark
     return `${m}:${s}`;
   };
 
+  const isSmall = size === 'sm';
+
   return (
     <div className={cn(
-      "flex-1 p-4 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all duration-300",
+      "flex-1 rounded-3xl flex flex-col items-center justify-center transition-all duration-300",
+      isSmall ? "p-2 gap-1" : "p-4 gap-2",
       isDark ? "bg-zinc-800/50 border border-zinc-700" : "bg-white border border-zinc-200 shadow-sm"
     )}>
-      <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</div>
+      <div className={cn("font-bold uppercase tracking-widest text-zinc-500", isSmall ? "text-[8px]" : "text-[10px]")}>{label}</div>
       {isEditing ? (
         <div className="flex items-center gap-1">
-          <input type="number" value={inputMins} onChange={e => setInputMins(Number(e.target.value))} className="w-10 text-center bg-transparent outline-none font-bold text-lg" />
+          <input type="number" value={inputMins} onChange={e => setInputMins(Number(e.target.value))} className={cn("text-center bg-transparent outline-none font-bold", isSmall ? "w-6 text-sm" : "w-10 text-lg")} />
           <span className="font-bold">:</span>
-          <input type="number" value={inputSecs} onChange={e => setInputSecs(Number(e.target.value))} className="w-10 text-center bg-transparent outline-none font-bold text-lg" />
-          <button onClick={saveEdit} className="p-1 text-emerald-500"><Check size={16}/></button>
+          <input type="number" value={inputSecs} onChange={e => setInputSecs(Number(e.target.value))} className={cn("text-center bg-transparent outline-none font-bold", isSmall ? "w-6 text-sm" : "w-10 text-lg")} />
+          <button onClick={saveEdit} className="p-1 text-emerald-500"><Check size={isSmall ? 12 : 16}/></button>
         </div>
       ) : (
         <div onClick={() => { setIsEditing(true); setIsRunning(false); }} className={cn(
-          "text-2xl font-bold tracking-tighter cursor-pointer",
+          "font-bold tracking-tighter cursor-pointer",
+          isSmall ? "text-lg" : "text-2xl",
           timeLeft === 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-zinc-900'
         )}>{format(timeLeft)}</div>
       )}
       <div className="flex gap-2">
-        <button onClick={toggleTimer} className="p-2 rounded-full hover:bg-zinc-500/10 transition-colors">
-          {isRunning ? <Pause size={16} className="text-amber-500" /> : <Play size={16} className="text-emerald-500" />}
+        <button onClick={toggleTimer} className="p-1 rounded-full hover:bg-zinc-500/10 transition-colors">
+          {isRunning ? <Pause size={isSmall ? 12 : 16} className="text-amber-500" /> : <Play size={isSmall ? 12 : 16} className="text-emerald-500" />}
         </button>
-        <button onClick={resetTimer} className="p-2 rounded-full hover:bg-zinc-500/10 transition-colors text-red-500">
-          <RotateCcw size={16} />
+        <button onClick={resetTimer} className="p-1 rounded-full hover:bg-zinc-500/10 transition-colors text-red-500">
+          <RotateCcw size={isSmall ? 12 : 16} />
         </button>
       </div>
     </div>
@@ -165,7 +125,9 @@ export default function App() {
   const [workoutHistory, setWorkoutHistory] = useState(() => getSavedData('myfit_workoutHistory', MOCK_HISTORY));
   const [timeframe, setTimeframe] = useState('month');
   const [showFinishPrompt, setShowFinishPrompt] = useState(false);
-  const [expandedSplits, setExpandedSplits] = useState<number[]>(() => getSavedData('myfit_expandedSplits', [0]));
+  const [finishStep, setFinishStep] = useState(1); // 1: Done for day?, 2: Move to tracker?
+  const [expandedSplits, setExpandedSplits] = useState<number[]>(() => getSavedData('myfit_expandedSplits', []));
+  const [persistentFeedback, setPersistentFeedback] = useState(() => getSavedData('myfit_persistentFeedback', {}));
   const [editingSplitIdx, setEditingSplitIdx] = useState<number | null>(null);
   const [editingSplitName, setEditingSplitName] = useState("");
   const [editingExercise, setEditingExercise] = useState<{ splitIdx: number, exerciseIdx: number } | null>(null);
@@ -176,6 +138,7 @@ export default function App() {
   // Sync to LocalStorage
   useEffect(() => { localStorage.setItem('myfit_isDark', JSON.stringify(isDark)); }, [isDark]);
   useEffect(() => { localStorage.setItem('myfit_weight', JSON.stringify(weight)); }, [weight]);
+  useEffect(() => { localStorage.setItem('myfit_persistentFeedback', JSON.stringify(persistentFeedback)); }, [persistentFeedback]);
   useEffect(() => { localStorage.setItem('myfit_workoutSplit', JSON.stringify(workoutSplit)); }, [workoutSplit]);
   useEffect(() => { localStorage.setItem('myfit_dietPlan', JSON.stringify(dietPlan)); }, [dietPlan]);
   useEffect(() => { localStorage.setItem('myfit_allSessionsProgress', JSON.stringify(allSessionsProgress)); }, [allSessionsProgress]);
@@ -188,7 +151,16 @@ export default function App() {
     }
   }, [sessionProgress, activeSessionIdx]);
 
-  const closeSession = () => { setActiveSession(null); setActiveSessionIdx(null); setActiveExerciseIdx(null); setShowFinishPrompt(false); };
+  const closeSession = (log: boolean = false) => { 
+    if (log) {
+      confirmAndLogSession();
+    }
+    setActiveSession(null); 
+    setActiveSessionIdx(null); 
+    setActiveExerciseIdx(null); 
+    setShowFinishPrompt(false); 
+    setFinishStep(1);
+  };
   
   const confirmAndLogSession = () => {
     let target = 0; let done = 0;
@@ -198,8 +170,17 @@ export default function App() {
       if (exData) done += (exData.setsCompleted?.filter(Boolean).length || 0) * (exData.reps || 0);
     });
     const score = target > 0 ? Math.round((done / target) * 100) : 0;
-    setWorkoutHistory((prev: any) => [...prev, { date: new Date().toISOString(), score, name: activeSession.day }]);
-    closeSession();
+    const newEntry = { date: new Date().toISOString(), score, name: activeSession.day };
+    setWorkoutHistory((prev: any) => [...prev, newEntry]);
+    
+    // Clear the progress for this split so it's fresh next time
+    if (activeSessionIdx !== null) {
+      setAllSessionsProgress((p: any) => {
+        const newP = { ...p };
+        delete newP[activeSessionIdx];
+        return newP;
+      });
+    }
   };
 
   const toggleExpandSplit = (idx: number) => {
@@ -298,32 +279,17 @@ export default function App() {
     setActiveExerciseIdx(null);
     setActiveTab('session');
     
-    const existingProgress = allSessionsProgress[idx];
-    const isCompleted = existingProgress && Object.values(existingProgress).every((ex: any) => ex.setsCompleted?.every(Boolean));
-
-    // If no progress exists OR the session was already completed, start fresh
-    if (!existingProgress || isCompleted) {
-      const freshProg: any = {}; 
-      day.exercises.forEach((ex: any, i: number) => {
-        freshProg[i] = { 
-          reps: parseInt(ex.reps) || 10, 
-          setsCompleted: Array(parseInt(ex.sets) || 1).fill(false) 
-        };
-      });
-      setSessionProgress(freshProg);
-    } else {
-      // Resume existing progress, but ensure new exercises are accounted for to prevent crashes
-      const mergedProg = { ...existingProgress };
-      day.exercises.forEach((ex: any, i: number) => {
-        if (!mergedProg[i]) {
-          mergedProg[i] = { 
-            reps: parseInt(ex.reps) || 10, 
-            setsCompleted: Array(parseInt(ex.sets) || 1).fill(false) 
-          };
-        }
-      });
-      setSessionProgress(mergedProg);
-    }
+    // Always start fresh as per user request, but keep feedback
+    const freshProg: any = {}; 
+    day.exercises.forEach((ex: any, i: number) => {
+      const feedbackKey = `${idx}-${i}`;
+      freshProg[i] = { 
+        reps: parseInt(ex.reps) || 10, 
+        setsCompleted: Array(parseInt(ex.sets) || 1).fill(false),
+        feedback: persistentFeedback[feedbackKey] || null // 'easy' | 'hard' | 'tough'
+      };
+    });
+    setSessionProgress(freshProg);
   };
 
   const startSessionFromPlan = (idx: number) => {
@@ -754,33 +720,74 @@ export default function App() {
             >
               {!activeSession ? (
                 <div className="space-y-4">
-                  <div className={cn("p-4 rounded-2xl text-center", isDark ? "bg-zinc-900/50" : "bg-emerald-50")}>
-                    <p className="text-xs font-medium text-emerald-600">Ready to crush it? Select a split to start.</p>
-                  </div>
-                  {workoutSplit.map((day: any, idx: number) => (
-                    <button 
-                      key={idx} 
-                      onClick={() => startSession(day, idx)} 
-                      className={cn(
-                        "w-full p-6 rounded-3xl flex justify-between items-center transition-all group",
-                        isDark ? "bg-zinc-900/50 border border-zinc-800 hover:border-emerald-500/50" : "bg-white border border-zinc-200 shadow-sm hover:border-emerald-500/50"
-                      )}
-                    >
-                      <span className="text-lg font-bold">{day.day}</span>
-                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                        <Play size={20} fill="currentColor" />
+                  <div className="grid gap-3">
+                    {workoutSplit.length === 0 ? (
+                      <div className="text-center p-8 text-zinc-500 text-sm italic">
+                        No splits found. Go to the Plan tab to create one!
                       </div>
-                    </button>
-                  ))}
+                    ) : (
+                      workoutSplit.map((day: any, idx: number) => (
+                        <button 
+                          key={idx} 
+                          onClick={() => startSession(day, idx)} 
+                          className={cn(
+                            "w-full p-6 rounded-3xl flex justify-between items-center transition-all group",
+                            isDark ? "bg-zinc-900/50 border border-zinc-800 hover:border-emerald-500/50" : "bg-white border border-zinc-200 shadow-sm hover:border-emerald-500/50"
+                          )}
+                        >
+                          <div className="text-left">
+                            <span className="text-lg font-bold block">{day.day}</span>
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{day.exercises.length} Exercises</span>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                            <Play size={20} fill="currentColor" />
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-emerald-500">{activeSession.day}</h2>
-                    <div className="flex gap-2">
-                      <button onClick={closeSession} className="p-2 rounded-xl bg-red-500/10 text-red-500"><X size={20} /></button>
-                      <button onClick={() => setShowFinishPrompt(true)} className="p-2 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"><Check size={20} /></button>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start pt-2 px-1">
+                      <div className="space-y-1">
+                        <h2 className="text-2xl font-black text-emerald-500 tracking-tight leading-none">{activeSession.day}</h2>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] opacity-60">Active Session</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            if (activeExerciseIdx !== null) {
+                              setActiveExerciseIdx(null);
+                            } else {
+                              closeSession(false);
+                            }
+                          }} 
+                          className={cn(
+                            "px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all",
+                            isDark ? "bg-zinc-900 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                          )}
+                        >
+                          Back
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowFinishPrompt(true);
+                            setFinishStep(1);
+                          }} 
+                          className="px-5 py-2.5 rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 text-[11px] font-black uppercase tracking-wider hover:scale-105 transition-transform"
+                        >
+                          End Session
+                        </button>
+                      </div>
                     </div>
+                    
+                    {activeExerciseIdx === null && (
+                      <div className="px-1">
+                        <WorkoutTimer label="Long Rest" isDark={isDark} defaultSeconds={180} />
+                      </div>
+                    )}
                   </div>
 
                   {showFinishPrompt ? (
@@ -791,20 +798,59 @@ export default function App() {
                         isDark ? "bg-zinc-900 border border-zinc-800" : "bg-white border border-zinc-200 shadow-xl"
                       )}
                     >
-                      <div className="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-500/20">
-                        <CheckCircle size={32} />
-                      </div>
-                      <h3 className="text-xl font-bold mb-2">Session Complete?</h3>
-                      <p className="text-sm text-zinc-500 mb-8">Great work! Ready to log your progress?</p>
-                      <div className="flex gap-3">
-                        <button onClick={closeSession} className="flex-1 py-4 rounded-2xl bg-zinc-100 text-zinc-900 font-bold text-sm">Discard</button>
-                        <button onClick={confirmAndLogSession} className="flex-1 py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/20">Log Session</button>
-                      </div>
+                      {finishStep === 1 ? (
+                        <>
+                          <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Info size={32} />
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">Done for the day?</h3>
+                          <p className="text-sm text-zinc-500 mb-8">Are you sure you want to finish this session now?</p>
+                          <div className="flex gap-3">
+                            <button 
+                              onClick={() => setShowFinishPrompt(false)} 
+                              className="flex-1 py-4 rounded-2xl bg-zinc-100 text-zinc-900 font-bold text-sm"
+                            >
+                              No
+                            </button>
+                            <button 
+                              onClick={() => setFinishStep(2)} 
+                              className="flex-1 py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/20"
+                            >
+                              Yes
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <TrendingUp size={32} />
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">Move to tracker?</h3>
+                          <p className="text-sm text-zinc-500 mb-8">Would you like to save your progress to the stats tracker?</p>
+                          <div className="flex gap-3">
+                            <button 
+                              onClick={() => closeSession(false)} 
+                              className="flex-1 py-4 rounded-2xl bg-zinc-100 text-zinc-900 font-bold text-sm"
+                            >
+                              No
+                            </button>
+                            <button 
+                              onClick={() => closeSession(true)} 
+                              className="flex-1 py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/20"
+                            >
+                              Yes
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </motion.div>
                   ) : activeExerciseIdx === null ? (
                     <div className="space-y-3">
                       {activeSession.exercises.map((ex: any, i: number) => {
-                        const done = sessionProgress[i]?.setsCompleted?.every(Boolean);
+                        const prog = sessionProgress[i];
+                        const done = prog?.setsCompleted?.every(Boolean);
+                        const feedback = prog?.feedback;
+                        
                         return (
                           <button 
                             key={i} 
@@ -812,19 +858,37 @@ export default function App() {
                             className={cn(
                               "w-full flex justify-between items-center p-5 rounded-2xl border transition-all",
                               done 
-                                ? "bg-emerald-500/5 border-emerald-500/20 opacity-60" 
+                                ? "bg-emerald-500/5 border-emerald-500/20" 
                                 : isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
                             )}
                           >
-                            <div className="text-left">
-                              <div className={cn("text-sm font-bold", done && "line-through")}>{ex.name}</div>
-                              <div className="text-[10px] text-zinc-500">{ex.sets} sets • {ex.reps} reps</div>
+                            <div className="text-left flex items-center gap-3">
+                              <div className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold",
+                                done ? "bg-emerald-500 text-white" : isDark ? "bg-zinc-800 text-zinc-500" : "bg-zinc-100 text-zinc-400"
+                              )}>
+                                {i + 1}
+                              </div>
+                              <div>
+                                <div className={cn("text-sm font-bold", done && "text-emerald-500")}>{ex.name}</div>
+                                <div className="text-[10px] text-zinc-500 font-medium">{ex.sets} sets • {ex.reps} reps • {ex.weight}</div>
+                              </div>
                             </div>
-                            <div className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center",
-                              done ? "bg-emerald-500 text-white" : "bg-zinc-500/10 text-zinc-400"
-                            )}>
-                              {done ? <Check size={16} /> : <ChevronRight size={16} />}
+                            <div className="flex items-center gap-3">
+                              {feedback && (
+                                <span className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest",
+                                  feedback === 'easy' ? "text-emerald-500" : feedback === 'hard' ? "text-red-500" : "text-amber-500"
+                                )}>
+                                  {feedback}
+                                </span>
+                              )}
+                              <div className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center",
+                                done ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-500/10 text-zinc-400"
+                              )}>
+                                {done ? <Check size={16} /> : <ChevronRight size={16} />}
+                              </div>
                             </div>
                           </button>
                         );
@@ -834,6 +898,7 @@ export default function App() {
                     const ex = activeSession.exercises[activeExerciseIdx];
                     const prog = sessionProgress[activeExerciseIdx];
                     const allDone = prog.setsCompleted.every(Boolean);
+                    
                     return (
                       <motion.div 
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
@@ -847,68 +912,151 @@ export default function App() {
                         </button>
                         
                         <div className="mb-8">
-                          <h3 className="text-2xl font-bold tracking-tight mb-1">{ex.name}</h3>
-                          <p className="text-xs text-zinc-500 font-medium tracking-wide uppercase">Target: {ex.sets} sets of {ex.reps} • {ex.weight}</p>
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-2xl font-bold tracking-tight">{ex.name}</h3>
+                            <span className="text-sm font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-lg">
+                              Set {ex.sets} x Rep {ex.reps}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 rounded-lg bg-zinc-500/10 text-zinc-500 text-[10px] font-bold uppercase tracking-wider">{ex.weight}</span>
+                            <span className="px-2 py-1 rounded-lg bg-zinc-500/10 text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Tempo: {ex.tempo}</span>
+                          </div>
                         </div>
 
                         <div className={cn(
                           "flex justify-between items-center p-6 rounded-2xl mb-8",
                           isDark ? "bg-zinc-800/50" : "bg-zinc-50"
                         )}>
-                          <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Reps this set</span>
-                          <div className="flex items-center gap-6">
+                          <div className="space-y-1">
+                            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 block">Reps this set</span>
+                            <span className="text-[10px] font-bold text-zinc-400">Max: {ex.reps}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
                             <motion.button 
                               whileTap={{ scale: 0.9 }}
                               onClick={() => setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, reps: Math.max(0, prog.reps-1)}}))} 
-                              className="w-12 h-12 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-zinc-500"
+                              className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-zinc-500"
                             >
-                              <Minus size={20}/>
+                              <Minus size={18}/>
                             </motion.button>
-                            <span className="text-3xl font-bold w-8 text-center">{prog.reps}</span>
+                            
+                            <input 
+                              type="number"
+                              value={prog.reps}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                const max = parseInt(ex.reps) || 999;
+                                setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, reps: Math.min(val, max)}}));
+                              }}
+                              className="w-16 text-3xl font-bold bg-transparent text-center outline-none border-b-2 border-emerald-500/30 focus:border-emerald-500 transition-colors"
+                            />
+
                             <motion.button 
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, reps: prog.reps+1}}))} 
-                              className="w-12 h-12 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/20 flex items-center justify-center text-white"
+                              onClick={() => {
+                                const max = parseInt(ex.reps) || 999;
+                                if (prog.reps < max) {
+                                  setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, reps: prog.reps+1}}));
+                                }
+                              }} 
+                              className={cn(
+                                "w-10 h-10 rounded-full flex items-center justify-center text-white transition-all",
+                                prog.reps >= (parseInt(ex.reps) || 999) ? "bg-zinc-500 opacity-50 cursor-not-allowed" : "bg-emerald-500 shadow-lg shadow-emerald-500/20"
+                              )}
                             >
-                              <Plus size={20}/>
+                              <Plus size={18}/>
                             </motion.button>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-8">
-                          {prog.setsCompleted.map((s: boolean, si: number) => (
-                            <motion.button 
-                              key={si} 
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => {
-                                const newSets = [...prog.setsCompleted]; 
-                                newSets[si] = !newSets[si];
-                                setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, setsCompleted: newSets}}));
-                              }} 
-                              className={cn(
-                                "py-5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2",
-                                s 
-                                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
-                                  : isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
-                              )}
-                            >
-                              {s ? <CheckCircle size={16} /> : <Circle size={16} />}
-                              SET {si+1}
-                            </motion.button>
-                          ))}
+                        <div className="space-y-4 mb-8">
+                          <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Track Sets</span>
+                            <span className="text-[10px] font-bold text-emerald-500">{prog.setsCompleted.filter(Boolean).length} / {prog.setsCompleted.length} Completed</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-3">
+                            {prog.setsCompleted.map((s: boolean, si: number) => (
+                              <motion.button 
+                                key={si} 
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  const newSets = [...prog.setsCompleted]; 
+                                  newSets[si] = !newSets[si];
+                                  setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, setsCompleted: newSets}}));
+                                }} 
+                                className={cn(
+                                  "p-5 rounded-2xl text-sm font-bold transition-all flex items-center justify-between",
+                                  s 
+                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                    : isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-6 h-6 rounded-full flex items-center justify-center border",
+                                    s ? "border-white/50" : "border-zinc-500/30"
+                                  )}>
+                                    {s ? <Check size={12} /> : <span className="text-[10px]">{si+1}</span>}
+                                  </div>
+                                  <span>Set {si+1}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-xs opacity-60">{prog.reps} Reps</span>
+                                  {s ? <CheckCircle size={20} /> : <Circle size={20} className="opacity-20" />}
+                                </div>
+                              </motion.button>
+                            ))}
+                          </div>
                         </div>
 
-                        {allDone ? (
-                          <button 
-                            onClick={() => setActiveExerciseIdx(null)} 
-                            className="w-full py-5 rounded-2xl bg-emerald-500 text-white font-bold shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                        {allDone && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                            className="space-y-4 pt-4 border-t border-zinc-800/50"
                           >
-                            Next Exercise <ChevronRight size={18} />
-                          </button>
-                        ) : (
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 text-center">How did it go?</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { id: 'easy', label: 'Easy', color: 'bg-emerald-500', textColor: 'text-emerald-500', icon: CheckCircle },
+                                { id: 'hard', label: 'Hard', color: 'bg-red-500', textColor: 'text-red-500', icon: Activity },
+                                { id: 'tough', label: 'Tough', color: 'bg-amber-500', textColor: 'text-amber-500', icon: TrendingUp }
+                              ].map(f => (
+                                <button 
+                                  key={f.id}
+                                  onClick={() => {
+                                    const newFeedback = f.id;
+                                    setSessionProgress((p: any) => ({...p, [activeExerciseIdx]: {...prog, feedback: newFeedback}}));
+                                    const feedbackKey = `${activeSessionIdx}-${activeExerciseIdx}`;
+                                    setPersistentFeedback((prev: any) => ({...prev, [feedbackKey]: newFeedback}));
+                                  }}
+                                  className={cn(
+                                    "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border-2",
+                                    prog.feedback === f.id 
+                                      ? `border-${f.id === 'easy' ? 'emerald' : f.id === 'hard' ? 'red' : 'amber'}-500/50 bg-${f.id === 'easy' ? 'emerald' : f.id === 'hard' ? 'red' : 'amber'}-500/10` 
+                                      : "border-transparent bg-zinc-500/5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100"
+                                  )}
+                                >
+                                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white", f.color)}>
+                                    <f.icon size={16} />
+                                  </div>
+                                  <span className={cn("text-[10px] font-bold uppercase tracking-tighter", prog.feedback === f.id ? f.textColor : "text-zinc-500")}>{f.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                            
+                            <button 
+                              onClick={() => setActiveExerciseIdx(null)} 
+                              className="w-full py-5 rounded-2xl bg-emerald-500 text-white font-bold shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 mt-4"
+                            >
+                              Next Exercise <ChevronRight size={18} />
+                            </button>
+                          </motion.div>
+                        )}
+
+                        {!allDone && (
                           <div className="flex gap-3">
                             <WorkoutTimer label="Rest" isDark={isDark} defaultSeconds={90}/>
-                            <WorkoutTimer label="Long Rest" isDark={isDark} defaultSeconds={180}/>
                           </div>
                         )}
                       </motion.div>

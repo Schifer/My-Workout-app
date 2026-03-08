@@ -1,0 +1,15 @@
+{
+  "short_name": "MyFit",
+  "name": "MyFit - Smart Fitness Companion",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Google_Fit_icon_%282018%29.svg/512px-Google_Fit_icon_%282018%29.svg.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#18181b",
+  "background_color": "#18181b"
+}

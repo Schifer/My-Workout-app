@@ -5,10 +5,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Dumbbell, Utensils, Activity, ChevronRight, ChevronLeft, 
+  Dumbbell, Utensils, Activity, ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
   Moon, Sun, Pencil, Check, X, Plus, Timer, Repeat, 
   PlayCircle, CheckCircle, Circle, Play, Pause, 
-  RotateCcw, Minus, TrendingUp, 
+  RotateCcw, Minus, TrendingUp, Edit3,
   Settings, Info, Trash2, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -165,6 +165,11 @@ export default function App() {
   const [workoutHistory, setWorkoutHistory] = useState(() => getSavedData('myfit_workoutHistory', MOCK_HISTORY));
   const [timeframe, setTimeframe] = useState('month');
   const [showFinishPrompt, setShowFinishPrompt] = useState(false);
+  const [expandedSplits, setExpandedSplits] = useState<number[]>(() => getSavedData('myfit_expandedSplits', [0]));
+  const [editingSplitIdx, setEditingSplitIdx] = useState<number | null>(null);
+  const [editingSplitName, setEditingSplitName] = useState("");
+  const [editingExercise, setEditingExercise] = useState<{ splitIdx: number, exerciseIdx: number } | null>(null);
+  const [editingExerciseData, setEditingExerciseData] = useState<any>(null);
 
   // Sync to LocalStorage
   useEffect(() => { localStorage.setItem('myfit_isDark', JSON.stringify(isDark)); }, [isDark]);
@@ -173,6 +178,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('myfit_dietPlan', JSON.stringify(dietPlan)); }, [dietPlan]);
   useEffect(() => { localStorage.setItem('myfit_allSessionsProgress', JSON.stringify(allSessionsProgress)); }, [allSessionsProgress]);
   useEffect(() => { localStorage.setItem('myfit_workoutHistory', JSON.stringify(workoutHistory)); }, [workoutHistory]);
+  useEffect(() => { localStorage.setItem('myfit_expandedSplits', JSON.stringify(expandedSplits)); }, [expandedSplits]);
 
   useEffect(() => { 
     if (activeSessionIdx !== null) {
@@ -192,6 +198,105 @@ export default function App() {
     const score = target > 0 ? Math.round((done / target) * 100) : 0;
     setWorkoutHistory((prev: any) => [...prev, { date: new Date().toISOString(), score, name: activeSession.day }]);
     closeSession();
+  };
+
+  const toggleExpandSplit = (idx: number) => {
+    setExpandedSplits(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+  };
+
+  const addSplit = () => {
+    const newSplit = { day: "New Day", exercises: [] };
+    const newWorkoutSplit = [...workoutSplit, newSplit];
+    setWorkoutSplit(newWorkoutSplit);
+    setExpandedSplits(prev => [...prev, workoutSplit.length]);
+    setEditingSplitIdx(workoutSplit.length);
+    setEditingSplitName("New Day");
+  };
+
+  const deleteSplit = (idx: number) => {
+    setWorkoutSplit((prev: any) => prev.filter((_: any, i: number) => i !== idx));
+    setExpandedSplits(prev => prev.filter(i => i !== idx).map(i => i > idx ? i - 1 : i));
+  };
+
+  const addExercise = (splitIdx: number) => {
+    const newEx = { name: "New Exercise", weight: "0kg", sets: "3", reps: "10", tempo: "3-0-1-0" };
+    const newSplit = [...workoutSplit];
+    newSplit[splitIdx].exercises.push(newEx);
+    setWorkoutSplit(newSplit);
+    setEditingExercise({ splitIdx, exerciseIdx: newSplit[splitIdx].exercises.length - 1 });
+    setEditingExerciseData(newEx);
+  };
+
+  const deleteExercise = (splitIdx: number, exerciseIdx: number) => {
+    const newSplit = [...workoutSplit];
+    newSplit[splitIdx].exercises = newSplit[splitIdx].exercises.filter((_: any, i: number) => i !== exerciseIdx);
+    setWorkoutSplit(newSplit);
+  };
+
+  const saveSplitName = (idx: number) => {
+    const newSplit = [...workoutSplit];
+    newSplit[idx].day = editingSplitName;
+    setWorkoutSplit(newSplit);
+    setEditingSplitIdx(null);
+  };
+
+  const cancelSplitEdit = (idx: number) => {
+    if (workoutSplit[idx].day === "New Day" && workoutSplit[idx].exercises.length === 0) {
+      deleteSplit(idx);
+    }
+    setEditingSplitIdx(null);
+  };
+
+  const saveExercise = (splitIdx: number, exerciseIdx: number) => {
+    const newSplit = [...workoutSplit];
+    newSplit[splitIdx].exercises[exerciseIdx] = editingExerciseData;
+    setWorkoutSplit(newSplit);
+    setEditingExercise(null);
+  };
+
+  const cancelExerciseEdit = (splitIdx: number, exerciseIdx: number) => {
+    if (workoutSplit[splitIdx].exercises[exerciseIdx].name === "New Exercise") {
+      deleteExercise(splitIdx, exerciseIdx);
+    }
+    setEditingExercise(null);
+  };
+
+  const startSession = (day: any, idx: number) => {
+    setActiveSession(day);
+    setActiveSessionIdx(idx);
+    setActiveExerciseIdx(null);
+    setActiveTab('session');
+    
+    const existingProgress = allSessionsProgress[idx];
+    const isCompleted = existingProgress && Object.values(existingProgress).every((ex: any) => ex.setsCompleted?.every(Boolean));
+
+    // If no progress exists OR the session was already completed, start fresh
+    if (!existingProgress || isCompleted) {
+      const freshProg: any = {}; 
+      day.exercises.forEach((ex: any, i: number) => {
+        freshProg[i] = { 
+          reps: parseInt(ex.reps) || 10, 
+          setsCompleted: Array(parseInt(ex.sets) || 1).fill(false) 
+        };
+      });
+      setSessionProgress(freshProg);
+    } else {
+      // Resume existing progress, but ensure new exercises are accounted for to prevent crashes
+      const mergedProg = { ...existingProgress };
+      day.exercises.forEach((ex: any, i: number) => {
+        if (!mergedProg[i]) {
+          mergedProg[i] = { 
+            reps: parseInt(ex.reps) || 10, 
+            setsCompleted: Array(parseInt(ex.sets) || 1).fill(false) 
+          };
+        }
+      });
+      setSessionProgress(mergedProg);
+    }
+  };
+
+  const startSessionFromPlan = (idx: number) => {
+    startSession(workoutSplit[idx], idx);
   };
 
   const filteredHistory = useMemo(() => {
@@ -263,37 +368,214 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
-              {workoutSplit.map((day, idx) => (
-                <div key={idx} className={cn(
-                  "rounded-3xl p-6",
-                  isDark ? "bg-zinc-900/50 border border-zinc-800" : "bg-white border border-zinc-200 shadow-sm"
-                )}>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold tracking-tight text-emerald-500">{day.day}</h3>
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                      <Dumbbell size={16} />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {day.exercises.map((ex, i) => (
-                      <div key={i} className={cn(
-                        "flex justify-between items-center p-4 rounded-2xl",
-                        isDark ? "bg-zinc-800/50" : "bg-zinc-50"
-                      )}>
-                        <div className="flex-1">
-                          <div className="text-sm font-bold">{ex.name}</div>
-                          <div className="text-[10px] text-zinc-500 font-medium">Tempo: {ex.tempo}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-emerald-500">{ex.weight}</div>
-                          <div className="text-[10px] text-zinc-500 font-medium">{ex.sets} Sets × {ex.reps}</div>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold tracking-tight">Workout Plan</h2>
+                <button 
+                  onClick={addSplit}
+                  className="p-2 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs font-bold"
+                >
+                  <Plus size={16} /> Add Split
+                </button>
+              </div>
+
+              {workoutSplit.map((day: any, idx: number) => {
+                const isExpanded = expandedSplits.includes(idx);
+                const isEditingName = editingSplitIdx === idx;
+
+                return (
+                  <div key={idx} className={cn(
+                    "rounded-3xl overflow-hidden transition-all",
+                    isDark ? "bg-zinc-900/50 border border-zinc-800" : "bg-white border border-zinc-200 shadow-sm"
+                  )}>
+                    <div 
+                      className={cn(
+                        "p-6 flex justify-between items-center cursor-pointer",
+                        isExpanded && "border-b border-zinc-800/50"
+                      )}
+                      onClick={() => toggleExpandSplit(idx)}
+                    >
+                      <div className="flex items-center gap-3 flex-1" onClick={e => e.stopPropagation()}>
+                        {isEditingName ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <input 
+                              autoFocus
+                              value={editingSplitName}
+                              onChange={e => setEditingSplitName(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && saveSplitName(idx)}
+                              className={cn(
+                                "flex-1 bg-transparent border-b-2 border-emerald-500 outline-none text-lg font-bold text-emerald-500",
+                                isDark ? "text-white" : "text-zinc-900"
+                              )}
+                            />
+                            <button onClick={() => saveSplitName(idx)} className="p-1 text-emerald-500"><Check size={16} /></button>
+                            <button onClick={() => cancelSplitEdit(idx)} className="p-1 text-red-500"><X size={16} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 group">
+                            <h3 className="text-lg font-bold tracking-tight text-emerald-500">{day.day}</h3>
+                            <button 
+                              onClick={() => {
+                                setEditingSplitIdx(idx);
+                                setEditingSplitName(day.day);
+                              }}
+                              className="p-1 text-zinc-500 hover:text-emerald-500 transition-all"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); startSessionFromPlan(idx); }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-[10px] font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-1"
+                        >
+                          <Play size={12} fill="currentColor" /> Start
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); deleteSplit(idx); }}
+                          className="p-2 rounded-lg text-zinc-500 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
                       </div>
-                    ))}
+                    </div>
+                    
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="p-6 pt-0 space-y-3"
+                        >
+                          <div className="space-y-3 mt-4">
+                            {day.exercises.map((ex: any, i: number) => {
+                              const isEditingEx = editingExercise?.splitIdx === idx && editingExercise?.exerciseIdx === i;
+                              
+                              if (isEditingEx) {
+                                return (
+                                  <div key={i} className={cn(
+                                    "p-4 rounded-2xl space-y-4",
+                                    isDark ? "bg-zinc-800" : "bg-zinc-50"
+                                  )}>
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-bold text-zinc-500 uppercase">Exercise Name</label>
+                                      <input 
+                                        autoFocus
+                                        value={editingExerciseData.name}
+                                        onChange={e => setEditingExerciseData({...editingExerciseData, name: e.target.value})}
+                                        className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                                      />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase">Weight</label>
+                                        <input 
+                                          value={editingExerciseData.weight}
+                                          onChange={e => setEditingExerciseData({...editingExerciseData, weight: e.target.value})}
+                                          className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase">Tempo</label>
+                                        <input 
+                                          value={editingExerciseData.tempo}
+                                          onChange={e => setEditingExerciseData({...editingExerciseData, tempo: e.target.value})}
+                                          className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase">Sets</label>
+                                        <input 
+                                          type="number"
+                                          value={editingExerciseData.sets}
+                                          onChange={e => setEditingExerciseData({...editingExerciseData, sets: e.target.value})}
+                                          className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase">Reps</label>
+                                        <input 
+                                          value={editingExerciseData.reps}
+                                          onChange={e => setEditingExerciseData({...editingExerciseData, reps: e.target.value})}
+                                          className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button 
+                                        onClick={() => saveExercise(idx, i)}
+                                        className="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold"
+                                      >
+                                        Save
+                                      </button>
+                                      <button 
+                                        onClick={() => cancelExerciseEdit(idx, i)}
+                                        className="flex-1 py-2 rounded-xl bg-zinc-100 text-zinc-500 text-xs font-bold"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div key={i} className={cn(
+                                  "flex justify-between items-center p-4 rounded-2xl group",
+                                  isDark ? "bg-zinc-800/50" : "bg-zinc-50"
+                                )}>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-sm font-bold">{ex.name}</div>
+                                      <button 
+                                        onClick={() => {
+                                          setEditingExercise({ splitIdx: idx, exerciseIdx: i });
+                                          setEditingExerciseData(ex);
+                                        }}
+                                        className="p-1 text-zinc-500 hover:text-emerald-500 transition-all"
+                                      >
+                                        <Edit3 size={12} />
+                                      </button>
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 font-medium">Tempo: {ex.tempo}</div>
+                                  </div>
+                                  <div className="text-right flex items-center gap-4">
+                                    <div>
+                                      <div className="text-sm font-bold text-emerald-500">{ex.weight}</div>
+                                      <div className="text-[10px] text-zinc-500 font-medium">{ex.sets} Sets × {ex.reps}</div>
+                                    </div>
+                                    <button 
+                                      onClick={() => deleteExercise(idx, i)}
+                                      className="p-2 text-zinc-400 hover:text-red-500 transition-all"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          <button 
+                            onClick={() => addExercise(idx)}
+                            className="w-full py-3 rounded-2xl border-2 border-dashed border-zinc-800 text-zinc-500 hover:border-emerald-500/50 hover:text-emerald-500 transition-all flex items-center justify-center gap-2 text-xs font-bold mt-4"
+                          >
+                            <Plus size={16} /> Add Exercise
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </motion.div>
           )}
 
@@ -348,25 +630,10 @@ export default function App() {
                   <div className={cn("p-4 rounded-2xl text-center", isDark ? "bg-zinc-900/50" : "bg-emerald-50")}>
                     <p className="text-xs font-medium text-emerald-600">Ready to crush it? Select a split to start.</p>
                   </div>
-                  {workoutSplit.map((day, idx) => (
+                  {workoutSplit.map((day: any, idx: number) => (
                     <button 
                       key={idx} 
-                      onClick={() => { 
-                        setActiveSession(day); 
-                        setActiveSessionIdx(idx); 
-                        if (!allSessionsProgress[idx]) {
-                          const prog: any = {}; 
-                          day.exercises.forEach((ex: any, i: number) => {
-                            prog[i] = { 
-                              reps: parseInt(ex.reps) || 10, 
-                              setsCompleted: Array(parseInt(ex.sets) || 1).fill(false) 
-                            };
-                          });
-                          setSessionProgress(prog);
-                        } else {
-                          setSessionProgress(allSessionsProgress[idx]);
-                        }
-                      }} 
+                      onClick={() => startSession(day, idx)} 
                       className={cn(
                         "w-full p-6 rounded-3xl flex justify-between items-center transition-all group",
                         isDark ? "bg-zinc-900/50 border border-zinc-800 hover:border-emerald-500/50" : "bg-white border border-zinc-200 shadow-sm hover:border-emerald-500/50"

@@ -170,6 +170,8 @@ export default function App() {
   const [editingSplitName, setEditingSplitName] = useState("");
   const [editingExercise, setEditingExercise] = useState<{ splitIdx: number, exerciseIdx: number } | null>(null);
   const [editingExerciseData, setEditingExerciseData] = useState<any>(null);
+  const [editingMealIdx, setEditingMealIdx] = useState<number | null>(null);
+  const [editingMealData, setEditingMealData] = useState<any>(null);
 
   // Sync to LocalStorage
   useEffect(() => { localStorage.setItem('myfit_isDark', JSON.stringify(isDark)); }, [isDark]);
@@ -259,6 +261,35 @@ export default function App() {
       deleteExercise(splitIdx, exerciseIdx);
     }
     setEditingExercise(null);
+  };
+
+  const addMeal = () => {
+    const newMeal = { time: "Time", items: "New Meal", calories: 0, protein: 0 };
+    setDietPlan((prev: any) => [...prev, newMeal]);
+    setEditingMealIdx(dietPlan.length);
+    setEditingMealData(newMeal);
+  };
+
+  const saveMeal = (idx: number) => {
+    const newPlan = [...dietPlan];
+    newPlan[idx] = { 
+      ...editingMealData, 
+      calories: parseInt(editingMealData.calories) || 0,
+      protein: parseInt(editingMealData.protein) || 0
+    };
+    setDietPlan(newPlan);
+    setEditingMealIdx(null);
+  };
+
+  const cancelMealEdit = (idx: number) => {
+    if (dietPlan[idx].items === "New Meal" && dietPlan[idx].calories === 0) {
+      deleteMeal(idx);
+    }
+    setEditingMealIdx(null);
+  };
+
+  const deleteMeal = (idx: number) => {
+    setDietPlan((prev: any) => prev.filter((_: any, i: number) => i !== idx));
   };
 
   const startSession = (day: any, idx: number) => {
@@ -589,31 +620,127 @@ export default function App() {
                 "rounded-3xl p-6 overflow-hidden relative",
                 isDark ? "bg-zinc-900/50 border border-zinc-800" : "bg-white border border-zinc-200 shadow-sm"
               )}>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold tracking-tight">Diet Plan</h2>
+                  <button 
+                    onClick={addMeal}
+                    className="p-2 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs font-bold"
+                  >
+                    <Plus size={16} /> Add Meal
+                  </button>
+                </div>
+
                 <div className="flex justify-around p-6 rounded-3xl mb-8 bg-emerald-500 text-white shadow-xl shadow-emerald-500/20">
                   <div className="text-center">
                     <div className="text-[10px] uppercase font-bold opacity-80">Daily Kcal</div>
-                    <div className="text-2xl font-bold">{dietPlan.reduce((a,c) => a+(c.calories||0),0)}</div>
+                    <div className="text-2xl font-bold">{dietPlan.reduce((a: any,c: any) => a+(c.calories||0),0)}</div>
                   </div>
                   <div className="w-px h-10 bg-white/20 self-center" />
                   <div className="text-center">
                     <div className="text-[10px] uppercase font-bold opacity-80">Protein</div>
-                    <div className="text-2xl font-bold">{dietPlan.reduce((a,c) => a+(c.protein||0),0)}g</div>
+                    <div className="text-2xl font-bold">{dietPlan.reduce((a: any,c: any) => a+(c.protein||0),0)}g</div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {dietPlan.map((meal, idx) => (
-                    <div key={idx} className={cn(
-                      "p-4 rounded-2xl border transition-all",
-                      isDark ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-50 border-zinc-100"
-                    )}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{meal.time}</span>
-                        <span className="text-[10px] font-bold text-zinc-500">{meal.calories} kcal | {meal.protein}g P</span>
+                  {dietPlan.map((meal: any, idx: number) => {
+                    const isEditing = editingMealIdx === idx;
+
+                    if (isEditing) {
+                      return (
+                        <div key={idx} className={cn(
+                          "p-4 rounded-2xl space-y-4",
+                          isDark ? "bg-zinc-800" : "bg-zinc-50"
+                        )}>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase">Time</label>
+                              <input 
+                                autoFocus
+                                value={editingMealData.time}
+                                onChange={e => setEditingMealData({...editingMealData, time: e.target.value})}
+                                className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase">Calories</label>
+                              <input 
+                                type="number"
+                                value={editingMealData.calories}
+                                onChange={e => setEditingMealData({...editingMealData, calories: e.target.value})}
+                                className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase">Meal Items</label>
+                            <input 
+                              value={editingMealData.items}
+                              onChange={e => setEditingMealData({...editingMealData, items: e.target.value})}
+                              className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-zinc-500 uppercase">Protein (g)</label>
+                              <input 
+                                type="number"
+                                value={editingMealData.protein}
+                                onChange={e => setEditingMealData({...editingMealData, protein: e.target.value})}
+                                className={cn("w-full bg-transparent border-b border-zinc-700 outline-none text-sm font-bold", isDark ? "text-white" : "text-zinc-900")}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => saveMeal(idx)}
+                              className="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold"
+                            >
+                              Save
+                            </button>
+                            <button 
+                              onClick={() => cancelMealEdit(idx)}
+                              className="flex-1 py-2 rounded-xl bg-zinc-100 text-zinc-500 text-xs font-bold"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={idx} className={cn(
+                        "p-4 rounded-2xl border transition-all group relative",
+                        isDark ? "bg-zinc-800/30 border-zinc-800" : "bg-zinc-50 border-zinc-100"
+                      )}>
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{meal.time}</span>
+                            <button 
+                              onClick={() => {
+                                setEditingMealIdx(idx);
+                                setEditingMealData(meal);
+                              }}
+                              className="p-1 text-zinc-500 hover:text-emerald-500 transition-all"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-zinc-500">{meal.calories} kcal | {meal.protein}g P</span>
+                            <button 
+                              onClick={() => deleteMeal(idx)}
+                              className="p-1 text-zinc-400 hover:text-red-500 transition-all"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium leading-snug">{meal.items}</div>
                       </div>
-                      <div className="text-sm font-medium leading-snug">{meal.items}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>

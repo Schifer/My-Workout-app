@@ -24,5 +24,5 @@ jobs:
       - run: cd android && ./gradlew --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: WorkoutApp
           path: android/app/build/outputs/apk/debug/app-debug.apk

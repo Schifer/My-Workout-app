@@ -22,7 +22,8 @@ jobs:
       - run: npx cap add android
       - run: npx cap sync android
       - run: cd android && ./gradlew --no-daemon assembleDebug
+      - run: mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/WorkoutApp.apk
       - uses: actions/upload-artifact@v4
         with:
           name: WorkoutApp
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/WorkoutApp.apk

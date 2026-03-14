@@ -13,8 +13,8 @@ jobs:
           distribution: 'temurin'
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: npm install
+          node-version: '20'
+      - run: rm -f package-lock.json && npm install
       - run: npm run build
       - run: npm install @capacitor/core@5.5.1 @capacitor/android@5.5.1
       - run: npm install -g @capacitor/cli
